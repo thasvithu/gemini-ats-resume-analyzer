@@ -7,6 +7,6 @@ google-generativeai     # Official Gemini Pro SDK for text and vision models (Pr
 # ---- Environment Variables ----
 python-dotenv           # Load your API keys (like Google API) securely from .env file
 
-# ---- PDF to Image Conversion ----
-pdf2image              # Convert PDF resume pages to images for Gemini Vision input
-Pillow                 # Required for image processing (used by pdf2image)
+# ---- PDF to Image Conversion (no OS deps) ----
+PyMuPDF                # Render PDF pages to images without poppler
+Pillow                 # Image handling for previews

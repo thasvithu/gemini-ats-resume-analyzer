@@ -6,7 +6,7 @@ import os
 import io
 import base64
 from PIL import Image
-import pdf2image
+import fitz  # PyMuPDF
 import google.generativeai as genai
 
 # Set up the Gemini API
@@ -24,14 +24,18 @@ def analyze_resume_with_gemini(job_desc, resume_images, prompt_text):
 # Convert PDF pages to images and prepare them for Gemini input
 def process_pdf(uploaded_pdf):
     try:
-        # Convert entire PDF to list of PIL images
-        pages = pdf2image.convert_from_bytes(uploaded_pdf.read())
+        # Read the entire PDF into memory
+        pdf_bytes = uploaded_pdf.read()
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
 
         image_parts = []
-        for page in pages:
-            buffer = io.BytesIO()
-            page.save(buffer, format='JPEG')
-            img_bytes = buffer.getvalue()
+        first_page_preview = None
+
+        for i in range(len(doc)):
+            page = doc[i]
+            # Render each page to a pixmap (raster image); 150 DPI balances quality and size
+            pix = page.get_pixmap(dpi=150)
+            img_bytes = pix.tobytes("jpeg")
             encoded = base64.b64encode(img_bytes).decode()
 
             image_parts.append({
@@ -39,8 +43,14 @@ def process_pdf(uploaded_pdf):
                 "data": encoded
             })
 
+            # Store first page for UI preview
+            if first_page_preview is None:
+                first_page_preview = Image.open(io.BytesIO(img_bytes))
+
+        doc.close()
+
         # Return image parts + first page for preview
-        return image_parts, pages[0]
+        return image_parts, first_page_preview
     except Exception as e:
         st.error(f"Error reading PDF: {e}")
         return None, None
